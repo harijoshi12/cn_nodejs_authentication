@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign Up</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <h1>Sign Up</h1>
+    <form id="signup-form">
+      <input type="text" name="name" placeholder="Name" required />
+      <input type="email" name="email" placeholder="Email" required />
+      <input type="password" name="password" placeholder="Password" required />
+      <div id="recaptcha"></div>
+      <button type="submit">Sign Up</button>
+    </form>
+    <p>Already have an account? <a href="/signin">Sign In</a></p>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <script src="/js/main.js"></script>
+  </body>
+</html>
