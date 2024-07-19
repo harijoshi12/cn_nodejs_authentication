@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sign In</title>
     <link rel="stylesheet" href="/css/styles.css" />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto:500"
+      rel="stylesheet"
+      type="text/css" />
   </head>
   <body>
     <h1>Sign In</h1>
@@ -14,9 +18,17 @@
       <div id="recaptcha"></div>
       <button type="submit">Sign In</button>
     </form>
-    <p>Don't have an account? <a href="/signup">Sign Up</a></p>
-    <p><a href="/forgot-password">Forgot Password?</a></p>
-    <a href="/auth/google">Sign in with Google</a>
+    <p>Don't have an account? <a href="/auth/signup">Sign Up</a></p>
+    <p><a href="/auth/forgot-password">Forgot Password?</a></p>
+
+    <!-- Updated Google Sign-In Button -->
+    <div class="google-btn" id="google-signin-btn">
+      <div class="google-icon-wrapper">
+        <div class="google-icon"></div>
+      </div>
+      <p class="btn-text"><b>Sign in with Google</b></p>
+    </div>
+
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <script src="/js/main.js"></script>
   </body>

@@ -1,20 +1,9 @@
+import dotenv from "dotenv";
+dotenv.config();
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import User from "../models/User.js";
 
-// Serialize user for the session
-passport.serializeUser((user, done) => {
-  done(null, user.id);
-});
-
-// Deserialize user from the session
-passport.deserializeUser((id, done) => {
-  User.findById(id).then((user) => {
-    done(null, user);
-  });
-});
-
-// Setup Google Strategy
 passport.use(
   new GoogleStrategy(
     {
@@ -25,23 +14,22 @@ passport.use(
     async (accessToken, refreshToken, profile, done) => {
       try {
         // Check if user already exists
-        const existingUser = await User.findOne({ googleId: profile.id });
-        if (existingUser) {
-          return done(null, existingUser);
+        let user = await User.findOne({ googleId: profile.id });
+        if (!user) {
+          // If not, create a new user
+          user = new User({
+            googleId: profile.id,
+            email: profile.emails[0].value,
+            name: profile.displayName,
+          });
+          await user.save();
         }
-
-        // If not, create a new user
-        const newUser = new User({
-          googleId: profile.id,
-          email: profile.emails[0].value,
-          name: profile.displayName,
-        });
-
-        await newUser.save();
-        done(null, newUser);
+        return done(null, user);
       } catch (error) {
-        done(error, null);
+        return done(error, null);
       }
     }
   )
 );
+
+export default passport;

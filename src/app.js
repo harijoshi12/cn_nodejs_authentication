@@ -4,6 +4,11 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import path from "path";
 import { fileURLToPath } from "url";
+import cookieParser from "cookie-parser";
+import dotenv from "dotenv";
+
+// Load environment variables
+dotenv.config();
 
 // Import configurations and routes
 import "./config/database.js";
@@ -18,6 +23,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Middleware
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(helmet()); // Adds various HTTP headers for security
@@ -25,7 +31,7 @@ app.use(helmet()); // Adds various HTTP headers for security
 // Rate limiting to prevent abuse
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 200, // limit each IP to 200 requests per windowMs
 });
 app.use(limiter);
 
@@ -40,6 +46,7 @@ app.set("views", path.join(__dirname, "views"));
 app.use(express.static(path.join(__dirname, "../public")));
 
 // Routes
+app.get("/", (req, res) => res.redirect("/auth/signin"));
 app.use("/auth", authRoutes);
 
 // Error handling middleware

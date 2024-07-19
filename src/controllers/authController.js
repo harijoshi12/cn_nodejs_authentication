@@ -10,6 +10,7 @@ import {
   InternalServerError,
 } from "../utils/errorClasses.js";
 import { verifyRecaptcha } from "../services/recaptchaService.js";
+import crypto from "crypto";
 
 export const signUp = async (req, res) => {
   const { email, password, name, recaptchaToken } = req.body;
@@ -20,22 +21,24 @@ export const signUp = async (req, res) => {
     throw new BadRequestError("reCAPTCHA verification failed");
   }
 
-  // Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     throw new BadRequestError("Email already in use");
   }
 
-  // Create new user
   const user = new User({ email, password, name });
   await user.save();
 
   // Send welcome email asynchronously
   sendWelcomeEmail(user).catch(console.error);
 
-  // Generate JWT
   const token = generateToken(user);
-  res.status(201).json({ message: "User created successfully", token });
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
+  });
+  res.status(201).json({ message: "User created successfully" });
 };
 
 export const signIn = async (req, res) => {
@@ -47,34 +50,39 @@ export const signIn = async (req, res) => {
     throw new BadRequestError("reCAPTCHA verification failed");
   }
 
-  // Find user
   const user = await User.findOne({ email });
   if (!user) {
     throw new NotFoundError("User not found");
   }
 
-  // Check password
   const isMatch = await user.comparePassword(password);
   if (!isMatch) {
     throw new BadRequestError("Incorrect password");
   }
 
-  // Generate JWT
   const token = generateToken(user);
-  res.json({ message: "Signed in successfully", token });
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
+  });
+  res.json({ message: "Signed in successfully" });
+};
+
+export const signOut = (req, res) => {
+  res.clearCookie("token");
+  res.json({ message: "Signed out successfully" });
 };
 
 export const resetPassword = async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   const user = await User.findById(req.user.id);
 
-  // Check old password
   const isMatch = await user.comparePassword(oldPassword);
   if (!isMatch) {
     throw new BadRequestError("Incorrect old password");
   }
 
-  // Set new password
   user.password = newPassword;
   await user.save();
 
@@ -89,8 +97,7 @@ export const forgotPassword = async (req, res) => {
     throw new NotFoundError("No user found with this email");
   }
 
-  // Generate reset token
-  const resetToken = generateToken(user, "1h");
+  const resetToken = crypto.randomBytes(20).toString("hex");
   user.resetPasswordToken = resetToken;
   user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
   await user.save();
@@ -113,15 +120,7 @@ export const forgotPassword = async (req, res) => {
 export const resetPasswordWithToken = async (req, res) => {
   const { token, newPassword } = req.body;
 
-  // Verify token
-  const decoded = verifyToken(token);
-  if (!decoded) {
-    throw new BadRequestError("Invalid or expired token");
-  }
-
-  // Find user with valid reset token
   const user = await User.findOne({
-    _id: decoded.id,
     resetPasswordToken: token,
     resetPasswordExpires: { $gt: Date.now() },
   });
@@ -130,11 +129,25 @@ export const resetPasswordWithToken = async (req, res) => {
     throw new BadRequestError("Password reset token is invalid or has expired");
   }
 
-  // Set new password
   user.password = newPassword;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpires = undefined;
   await user.save();
 
   res.json({ message: "Password has been reset successfully" });
+};
+
+export const googleAuthCallback = async (req, res) => {
+  try {
+    const token = generateToken(req.user);
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    });
+    res.redirect("/auth/home");
+  } catch (error) {
+    console.error("Google auth callback error:", error);
+    res.redirect("/auth/signin");
+  }
 };

@@ -1,5 +1,4 @@
 // src/config/database.js
-
 import mongoose from "mongoose";
 
 /**
